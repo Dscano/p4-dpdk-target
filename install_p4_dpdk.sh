@@ -15,6 +15,19 @@ print_step() {
 
 echo -e "${BOLD}${BLUE}=== P4 DPDK Target Installation Script ===${NC}"
 
+check_and_install() {
+    local cmd=$1
+    local pkgs=$2
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo -e "${YELLOW}$cmd not found.${NC}"
+        read -r -p "Install $pkgs now? [y/N] " reply
+        if [[ "$reply" =~ ^[Yy]$ ]]; then
+            sudo apt update
+            sudo apt install -y $pkgs
+        fi
+    fi
+}
+
 # ------------------------------------------------------------
 # 1. Base directories
 # ------------------------------------------------------------
@@ -24,19 +37,37 @@ export SDE_INSTALL=$SDE/install
 mkdir -p "$SDE"
 
 # ------------------------------------------------------------
+# 0. Check Dependencies (install if missing)
+# ------------------------------------------------------------
+print_step "0/5 Checking dependencies..."
+check_and_install "pip3" "python3-pip"
+check_and_install "autoreconf" "autoconf automake libtool pkg-config"
+
+# ------------------------------------------------------------
 # 1. Cloning p4-dpdk-target
 # ------------------------------------------------------------
 print_step "1/5 Cloning p4-dpdk-target..."
 cd $SDE
-git clone https://github.com/p4lang/p4-dpdk-target.git
+    git clone https://github.com/p4lang/p4-dpdk-target.git
 
 # ------------------------------------------------------------
 # 2. System dependencies
 # ------------------------------------------------------------
 print_step "2/5 Installing system dependencies..."
 
-cd p4-dpdk-target/tools/setup
-source p4sde_env_setup.sh $SDE
+[[ -f /etc/os-release ]] && . /etc/os-release
+
+if [[ "${ID:-}" == "ubuntu" ]] && dpkg --compare-versions "${VERSION_ID:-0}" ge "23.04" 2>/dev/null; then
+    read -r -p "Ubuntu >= 23.04 detected. Create a Python virtual environment? [y/N] " reply
+    if [[ "$reply" =~ ^[Yy]$ ]]; then
+        sudo apt update && sudo apt install -y python3-venv python3-full
+        python3 -m venv "$SDE/.venv"
+        source "$SDE/.venv/bin/activate"
+    fi
+fi
+
+cd "$SDE/p4-dpdk-target/tools/setup"
+source ./p4sde_env_setup.sh "$SDE"
 pip3 install distro
 python3 install_dep.py
 
