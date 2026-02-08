@@ -18,12 +18,26 @@ echo -e "${BOLD}${BLUE}=== P4 DPDK Target Installation Script ===${NC}"
 check_and_install() {
     local cmd=$1
     local pkgs=$2
+
+    # Check if command exists (for executables)
     if ! command -v "$cmd" >/dev/null 2>&1; then
         echo -e "${YELLOW}$cmd not found.${NC}"
-            sudo apt update
-            sudo apt install -y $pkgs
+        sudo apt update
+        sudo apt install -y $pkgs
+    fi
+ }
+
+check_and_install_pkgs() {
+     local pkgs=$1
+    if dpkg-query -l "$pkgs" >/dev/null 2>&1; then
+        echo -e "${GREEN}$pkgs is already installed.${NC}"
+    else
+        echo -e "${YELLOW}$pkgs not found. Installing...${NC}"
+        sudo apt update
+        sudo apt install -y "$pkgs"
     fi
 }
+
 
 # ------------------------------------------------------------
 # 1. Base directories
@@ -32,15 +46,20 @@ export SDE=$(pwd)/sde
 export SDE_INSTALL=$SDE/install
 
 mkdir -p "$SDE"
+mkdir -p "$SDE_INSTALL"
 
 # ------------------------------------------------------------
 # 0. Check Dependencies (install if missing)
 # ------------------------------------------------------------
 print_step "0/5 Checking dependencies..."
 check_and_install "pip3" "python3-pip"
-check_and_install "autoreconf" "autoconf automake libtool pkg-config"
+check_and_install "autoreconf" "autoconf automake libtool pkg-config autoconf-archive automake"
 check_and_install "cmake" "cmake" 
 check_and_install "doxygen" "doxygen" 
+check_and_install "dpdk-testpmd" "dpdk dpdk-dev libdpdk-dev"
+check_and_install_pkgs "libcjson-dev"
+check_and_install_pkgs "libedit-dev"
+check_and_install_pkgs "libffi-dev"
 
 # ------------------------------------------------------------
 # 1. Cloning p4-dpdk-target
