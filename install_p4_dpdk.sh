@@ -20,11 +20,8 @@ check_and_install() {
     local pkgs=$2
     if ! command -v "$cmd" >/dev/null 2>&1; then
         echo -e "${YELLOW}$cmd not found.${NC}"
-        read -r -p "Install $pkgs now? [y/N] " reply
-        if [[ "$reply" =~ ^[Yy]$ ]]; then
             sudo apt update
             sudo apt install -y $pkgs
-        fi
     fi
 }
 
@@ -42,6 +39,8 @@ mkdir -p "$SDE"
 print_step "0/5 Checking dependencies..."
 check_and_install "pip3" "python3-pip"
 check_and_install "autoreconf" "autoconf automake libtool pkg-config"
+check_and_install "cmake" "cmake" 
+check_and_install "doxygen" "doxygen" 
 
 # ------------------------------------------------------------
 # 1. Cloning p4-dpdk-target
@@ -55,16 +54,9 @@ cd $SDE
 # ------------------------------------------------------------
 print_step "2/5 Installing system dependencies..."
 
-[[ -f /etc/os-release ]] && . /etc/os-release
-
-if [[ "${ID:-}" == "ubuntu" ]] && dpkg --compare-versions "${VERSION_ID:-0}" ge "23.04" 2>/dev/null; then
-    read -r -p "Ubuntu >= 23.04 detected. Create a Python virtual environment? [y/N] " reply
-    if [[ "$reply" =~ ^[Yy]$ ]]; then
-        sudo apt update && sudo apt install -y python3-venv python3-full
-        python3 -m venv "$SDE/.venv"
-        source "$SDE/.venv/bin/activate"
-    fi
-fi
+sudo apt update && sudo apt upgrade && sudo apt install -y python3-venv python3-full
+python3 -m venv "$SDE/.venv"
+source "$SDE/.venv/bin/activate"
 
 cd "$SDE/p4-dpdk-target/tools/setup"
 source ./p4sde_env_setup.sh "$SDE"
