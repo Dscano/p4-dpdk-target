@@ -52,6 +52,13 @@ mkdir -p "$SDE_INSTALL"
 # 0. Check Dependencies (install if missing)
 # ------------------------------------------------------------
 print_step "0/5 Checking dependencies..."
+# Install Wireshark and tshark on Ubuntu system without having to
+# answer _any_ questions interactively, except perhaps providing your
+# password when prompted by 'sudo'.
+# https://askubuntu.com/questions/1275842/install-wireshark-without-confirm
+echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install wireshark tshark
+ check_and_install "pip3" "python3-pip"
 check_and_install "pip3" "python3-pip"
 check_and_install "autoreconf" "autoconf automake libtool pkg-config autoconf-archive automake"
 check_and_install "cmake" "cmake" 
