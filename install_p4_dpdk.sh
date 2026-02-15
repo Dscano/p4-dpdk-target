@@ -38,6 +38,18 @@ check_and_install_pkgs() {
     fi
 }
 
+install_deps_ubuntu_2404() {
+    print_step "Checking Ubuntu version..."
+    if [ -f /etc/os-release ]; then
+        source /etc/os-release
+        if [[ "$VERSION_ID" == "24.04" ]]; then
+            IS_24_04="true"
+        else
+            IS_24_04="false"
+        fi
+    fi
+}
+
 
 # ------------------------------------------------------------
 # 1. Base directories
@@ -58,7 +70,14 @@ print_step "0/5 Checking dependencies..."
 # https://askubuntu.com/questions/1275842/install-wireshark-without-confirm
 echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y install wireshark tshark
- check_and_install "pip3" "python3-pip"
+
+install_deps_ubuntu_2404
+
+if [[ "$IS_24_04" == "true" ]]; then
+    sudo apt update
+    sudo apt install -y libedit-dev pkg-config
+fi
+
 check_and_install "pip3" "python3-pip"
 check_and_install "autoreconf" "autoconf automake libtool pkg-config autoconf-archive automake"
 check_and_install "cmake" "cmake" 
@@ -86,6 +105,9 @@ source "$SDE/.venv/bin/activate"
 
 cd "$SDE/p4-dpdk-target/tools/setup"
 source ./p4sde_env_setup.sh "$SDE"
+if [[ "$IS_24_04" == "true" ]]; then
+    pip3 install setuptools
+fi
 pip3 install distro
 python3 install_dep.py
 
